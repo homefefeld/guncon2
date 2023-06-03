@@ -113,32 +113,47 @@ static void guncon2_usb_irq(struct urb *urb) {
         /* Buttons */
         buttons = ((data[0] << 8) | data[1]) ^ 0xffff;
 
-        // d-pad
-        if (buttons & GUNCON2_DPAD_LEFT) {// left
-            hat_x -= 1;
-        }
-        if (buttons & GUNCON2_DPAD_RIGHT) {// right
-            hat_x += 1;
-        }
-        if (buttons & GUNCON2_DPAD_UP) {// up
-            hat_y -= 1;
-        }
-        if (buttons & GUNCON2_DPAD_DOWN) {// down
-            hat_y += 1;
-        }
-        input_report_abs(guncon2->input_device, ABS_HAT0X, hat_x);
-        input_report_abs(guncon2->input_device, ABS_HAT0Y, hat_y);
+        // d-pad old (joysick hat)
+        //if (buttons & GUNCON2_DPAD_LEFT) {// left
+            //hat_x -= 1;
+        //}
+        //if (buttons & GUNCON2_DPAD_RIGHT) {// right
+            //hat_x += 1;
+        //}
+        //if (buttons & GUNCON2_DPAD_UP) {// up
+            //hat_y -= 1;
+        //}
+        //if (buttons & GUNCON2_DPAD_DOWN) {// down
+            //hat_y += 1;
+        //}
+        //input_report_abs(guncon2->input_device, ABS_HAT0X, hat_x);
+        //input_report_abs(guncon2->input_device, ABS_HAT0Y, hat_y);
 
-        // main buttons
-        input_report_key(guncon2->input_device, BTN_LEFT, buttons & GUNCON2_TRIGGER);
+
+        // d-pad new (keyboard)
+		input_report_key(guncon2->input_device, KEY_LEFT, buttons & GUNCON2_DPAD_LEFT);
+		input_report_key(guncon2->input_device, KEY_RIGHT, buttons & GUNCON2_DPAD_RIGHT);
+		input_report_key(guncon2->input_device, KEY_UP, buttons & GUNCON2_DPAD_UP);
+		input_report_key(guncon2->input_device, KEY_DOWN, buttons & GUNCON2_DPAD_DOWN);
+
+        // main buttons old (gamepad / joystick)
+        //input_report_key(guncon2->input_device, BTN_LEFT, buttons & GUNCON2_TRIGGER);
         //input_report_key(guncon2->input_device, BTN_RIGHT, buttons & GUNCON2_BTN_A || buttons & GUNCON2_BTN_C);
-        input_report_key(guncon2->input_device, BTN_RIGHT, buttons & GUNCON2_BTN_A);
+        //input_report_key(guncon2->input_device, BTN_RIGHT, buttons & GUNCON2_BTN_A);
+        //input_report_key(guncon2->input_device, BTN_MIDDLE, buttons & GUNCON2_BTN_B);
+        //input_report_key(guncon2->input_device, BTN_A, buttons & GUNCON2_BTN_A);
+        //input_report_key(guncon2->input_device, BTN_B, buttons & GUNCON2_BTN_B);
+        //input_report_key(guncon2->input_device, BTN_C, buttons & GUNCON2_BTN_C);
+        //input_report_key(guncon2->input_device, BTN_START, buttons & GUNCON2_BTN_START);
+        //input_report_key(guncon2->input_device, BTN_SELECT, buttons & GUNCON2_BTN_SELECT); 
+        
+        // main buttons new (keyboard)
+        input_report_key(guncon2->input_device, BTN_LEFT, buttons & GUNCON2_TRIGGER);
+        input_report_key(guncon2->input_device, BTN_RIGHT, buttons & GUNCON2_BTN_A );
         input_report_key(guncon2->input_device, BTN_MIDDLE, buttons & GUNCON2_BTN_B);
-        input_report_key(guncon2->input_device, BTN_A, buttons & GUNCON2_BTN_A);
-        input_report_key(guncon2->input_device, BTN_B, buttons & GUNCON2_BTN_B);
         input_report_key(guncon2->input_device, BTN_C, buttons & GUNCON2_BTN_C);
-        input_report_key(guncon2->input_device, BTN_START, buttons & GUNCON2_BTN_START);
-        input_report_key(guncon2->input_device, BTN_SELECT, buttons & GUNCON2_BTN_SELECT);               	
+        input_report_key(guncon2->input_device, KEY_1, buttons & GUNCON2_BTN_START);
+        input_report_key(guncon2->input_device, KEY_5, buttons & GUNCON2_BTN_SELECT);
 
         x_min = input_abs_get_min(guncon2->input_device, ABS_RX);	
         x_max = input_abs_get_max(guncon2->input_device, ABS_RX); 	
@@ -333,17 +348,24 @@ static int guncon2_probe(struct usb_interface *intf,
     input_set_abs_params(guncon2->input_device, ABS_RX, X_MIN, X_MAX, 0, 0);
     input_set_abs_params(guncon2->input_device, ABS_RY, Y_MIN, Y_MAX, 0, 0);    
 
-    input_set_capability(guncon2->input_device, EV_KEY, BTN_A);
-    input_set_capability(guncon2->input_device, EV_KEY, BTN_B);
+    input_set_capability(guncon2->input_device, EV_KEY, KEY_1);
+    input_set_capability(guncon2->input_device, EV_KEY, KEY_5);
+
+    //input_set_capability(guncon2->input_device, EV_KEY, BTN_A);
+    //input_set_capability(guncon2->input_device, EV_KEY, BTN_B);
     input_set_capability(guncon2->input_device, EV_KEY, BTN_C);
-    input_set_capability(guncon2->input_device, EV_KEY, BTN_START);
-    input_set_capability(guncon2->input_device, EV_KEY, BTN_SELECT);
+    //input_set_capability(guncon2->input_device, EV_KEY, BTN_START);
+    //input_set_capability(guncon2->input_device, EV_KEY, BTN_SELECT);
 
     // D-Pad
-    input_set_capability(guncon2->input_device, EV_ABS, ABS_HAT0X);
-    input_set_capability(guncon2->input_device, EV_ABS, ABS_HAT0Y);
-    input_set_abs_params(guncon2->input_device, ABS_HAT0X, -1, 1, 0, 0);
-    input_set_abs_params(guncon2->input_device, ABS_HAT0Y, -1, 1, 0, 0);
+    //input_set_capability(guncon2->input_device, EV_ABS, ABS_HAT0X);
+    //input_set_capability(guncon2->input_device, EV_ABS, ABS_HAT0Y);
+    //input_set_abs_params(guncon2->input_device, ABS_HAT0X, -1, 1, 0, 0);
+    //input_set_abs_params(guncon2->input_device, ABS_HAT0Y, -1, 1, 0, 0);
+    input_set_capability(guncon2->input_device, EV_KEY, KEY_LEFT);
+    input_set_capability(guncon2->input_device, EV_KEY, KEY_RIGHT);
+    input_set_capability(guncon2->input_device, EV_KEY, KEY_UP);
+    input_set_capability(guncon2->input_device, EV_KEY, KEY_DOWN);
 
     input_set_drvdata(guncon2->input_device, guncon2);
 
