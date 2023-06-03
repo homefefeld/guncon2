@@ -1,3 +1,6 @@
+# GunCon 2 to keyboard based on psakhis fork. 
+Mimics the Gun4ir except the C button. 
+I wanted to keep it seperate so we have one more extra button to use instead of BTN_RIGHT on both A & C.
 # GunCon 2 USB Lightgun Driver
 Linux driver for the GunCon 2 light gun.
 
