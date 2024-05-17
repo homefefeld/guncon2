@@ -18,37 +18,44 @@ log = logging.getLogger("guncon2-calibration")
 
 Postion = namedtuple("Postion", ["x", "y"])
 
+CENTER = 32678
 
 class Guncon2(object):
     def __init__(self, device):
         self.device = device
         self.pos = Postion(0, 0)
+        self.pos_n = Postion(0, 0)
 
     @property
     def absinfo(self):
-        return [self.device.absinfo(ecodes.ABS_X), self.device.absinfo(ecodes.ABS_Y)]
+        return [self.device.absinfo(ecodes.ABS_RX), self.device.absinfo(ecodes.ABS_RY)]
 
     @property
     def min_x(self):
-        return self.device.absinfo(ecodes.ABS_X).min
+        return self.device.absinfo(ecodes.ABS_RX).min
 
     @property
     def max_x(self):
-        return self.device.absinfo(ecodes.ABS_X).max
+        return self.device.absinfo(ecodes.ABS_RX).max
 
     @property
     def min_y(self):
-        return self.device.absinfo(ecodes.ABS_Y).min
+        return self.device.absinfo(ecodes.ABS_RY).min
 
     @property
     def max_y(self):
-        return self.device.absinfo(ecodes.ABS_Y).max
+        return self.device.absinfo(ecodes.ABS_RY).max
 
     @property
     def pos_normalised(self):
         return Postion(self.normalise(self.pos.x, self.min_x, self.max_x),
                        self.normalise(self.pos.y, self.min_y, self.max_y))
 
+    #psakhis: des_normalised number
+    @staticmethod
+    def desnormalise(self):
+        return Postion(int(((self.pos_n.x + CENTER) * (self.max_x - self.min_x) / 65535) + self.min_x),
+                       int(((self.pos_n.y + CENTER) * (self.max_y - self.min_y) / 65535) + self.min_y))
     @staticmethod
     def normalise(pos, min_, max_):
         return (pos - min_) / float(max_ - min_)
@@ -59,9 +66,11 @@ class Guncon2(object):
             if ev:
                 if ev.type == ecodes.EV_ABS:
                     if ev.code == ecodes.ABS_X:
-                        self.pos = Postion(ev.value, self.pos.y)
+                        self.pos_n = Postion(ev.value, self.pos_n.y)
+                        self.pos = self.desnormalise(self)
                     elif ev.code == ecodes.ABS_Y:
-                        self.pos = Postion(self.pos.x, ev.value)
+                        self.pos_n = Postion(self.pos_n.x, ev.value)
+                        self.pos = self.desnormalise(self)
                 if ev.type == ecodes.EV_KEY:
                     yield ev.code, ev.value
             else:
@@ -75,7 +84,8 @@ class Guncon2(object):
 
         # calculate the ratio between on-screen units and gun units for each axes
         try:
-            gsratio_x = (max(targets_x) - min(targets_x)) / (max(shots_x) - min(shots_x))
+            #gsratio_x = (max(targets_x) - min(targets_x)) / (max(shots_x) - min(shots_x))
+            gsratio_x = (max(shots_x) - min(shots_x)) / (385 - (width - max(targets_x) + min(targets_x)))     #8MHZ precision
         except ZeroDivisionError:
             log.error("Failed to calibrate X axis")
             return
@@ -92,8 +102,8 @@ class Guncon2(object):
         max_y = max(shots_y) + ((height - max(targets_y)) * gsratio_y)
 
         # set the X and Y calibration values
-        self.device.set_absinfo(ecodes.ABS_X, min=int(min_x), max=int(max_x))
-        self.device.set_absinfo(ecodes.ABS_Y, min=int(min_y), max=int(max_y))
+        self.device.set_absinfo(ecodes.ABS_RX, min=int(min_x), max=int(max_x))
+        self.device.set_absinfo(ecodes.ABS_RY, min=int(min_y), max=int(max_y))
 
         log.info(f"Calibration: x=({self.absinfo[0]}) y=({self.absinfo[1]})")
 
@@ -214,6 +224,8 @@ def main():
             for button, value in guncon.update():
                 if button == ecodes.BTN_LEFT and value == 1:
                     trigger = True
+                if button in (ecodes.BTN_RIGHT, ecodes.BTN_MIDDLE) and value == 1:
+                    running = False    
 
             raw_pos_txt = font.render(f"({raw_x}, {raw_y})", True, (128, 128, 255))
             cal_pos_txt = font.render(f"({cx}, {cy})", True, (128, 128, 255))
